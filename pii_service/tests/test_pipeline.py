@@ -195,11 +195,12 @@ def test_enabled_types_gate():
     assert "Иванов" in out and "345" not in out and types == ["PHONE"]
 
 
-def test_existing_mask_formats_preserved():
+def test_format_mode_fully_masks_span_content():
     out = masked("Иван Петрович Сидоров, email ivan@example.com, тел +7 912 345 67 89")
-    assert out == "И. П. С., email i***@*******.com, тел +7 *** *** ** 89"
-    assert masked("Дата рождения 12.03.1990") == "Дата рождения **.**.1990"
-    assert masked("Карта 4276 1234 5678 9012") == "Карта 4276 **** **** 9012"
+    assert out == "**** ******** *******, email ****@*******.***, тел +* *** *** ** **"
+    assert masked("Дата рождения 12.03.1990") == "Дата рождения **.**.****"
+    assert masked("Карта 4276 1234 5678 9012") == "Карта **** **** **** ****"
+    assert "1990" not in out and "912" not in out and "ivan" not in out.lower()
 
 
 def test_idempotent_remask():
