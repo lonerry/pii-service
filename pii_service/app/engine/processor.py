@@ -10,7 +10,6 @@ from typing import Any, Literal, Protocol
 
 from ..masking import highlight_entities, mask_text
 from ..pii.policy import Policy
-from ..store import Pair
 from .errors import (
     DemaskDenied,
     MaskingFailed,
@@ -23,6 +22,7 @@ from .errors import (
 from .policy import ProcessingPolicy, build_policy
 
 Direction = Literal["mask", "demask"]
+Pair = tuple[str, str]
 Masker = Callable[
     [str, list[str] | None, Policy],
     tuple[str, list[str], list[tuple[int, int, str]]],

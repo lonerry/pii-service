@@ -1,16 +1,20 @@
 """Shared detector types, candidate construction, and validators."""
 from __future__ import annotations
 
+import unicodedata
 from collections.abc import Callable, Sequence
 
 from ..candidates import Candidate
 
 
 def luhn_ok(digits: str) -> bool:
+    try:
+        values = [unicodedata.decimal(char) for char in digits]
+    except ValueError:
+        return False
     s = 0
-    parity = len(digits) % 2
-    for i, ch in enumerate(digits):
-        d = ord(ch) - 48
+    parity = len(values) % 2
+    for i, d in enumerate(values):
         if i % 2 == parity:
             d *= 2
             if d > 9:
@@ -42,7 +46,7 @@ def snils_ok(d: str) -> bool:
 
 
 def _digits(s: str) -> str:
-    return "".join(ch for ch in s if ch.isdigit())
+    return "".join(str(unicodedata.decimal(ch)) for ch in s if ch.isdecimal())
 
 
 def _cand(text: str, s: int, e: int, etype: str, score: float, source: str,

@@ -22,6 +22,18 @@ def test_store_first_writer_wins_under_concurrency():
     asyncio.run(scenario())
 
 
+def test_store_reclaims_expired_unique_keys():
+    async def scenario():
+        store = InMemoryStore(Cipher(), ttl=0)
+        for index in range(100):
+            await store.set_if_absent(str(index), "original", "masked")
+        await asyncio.sleep(0.001)
+        await store.set_if_absent("live", "original", "masked")
+        assert list(store._data) == ["live"]
+
+    asyncio.run(scenario())
+
+
 def test_payload_id_is_scoped_to_system():
     assert _storage_key("default", "id") != _storage_key("crm", "id")
     assert "id" not in _storage_key("default", "id")

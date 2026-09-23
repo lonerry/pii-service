@@ -54,6 +54,11 @@ class InMemoryStore:
         self.ttl = ttl
         self._lock = asyncio.Lock()
 
+    def _purge_expired(self, now: float) -> None:
+        expired = [key for key, item in self._data.items() if item[2] < now]
+        for key in expired:
+            self._data.pop(key, None)
+
     async def get(self, key: str) -> Pair | None:
         async with self._lock:
             item = self._data.get(key)
@@ -71,10 +76,12 @@ class InMemoryStore:
     async def set_if_absent(self, key: str, original: str, masked: str) -> bool:
         enc_orig = self._cipher.encrypt_b64(original)
         async with self._lock:
+            now = time.time()
+            self._purge_expired(now)
             item = self._data.get(key)
-            if item is not None and item[2] >= time.time():
+            if item is not None:
                 return False
-            self._data[key] = (enc_orig, masked, time.time() + self.ttl)
+            self._data[key] = (enc_orig, masked, now + self.ttl)
             return True
 
 

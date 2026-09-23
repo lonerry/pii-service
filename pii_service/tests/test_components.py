@@ -20,6 +20,15 @@ def test_validators():
     assert snils_ok("11223344595")
 
 
+@pytest.mark.parametrize("zero", ["\u0660", "\u06f0", "\u0966"])
+def test_unicode_decimal_card_is_masked(zero):
+    card = "4111111111111111"
+    translated = "".join(chr(ord(zero) + int(digit)) for digit in card)
+    out, types, _ = mask_text(f"Карта {translated}")
+    assert "CARD" in types
+    assert translated not in out
+
+
 def test_field_classification():
     assert classify_key("customer_phone").etype == "PHONE"
     assert classify_key("customer_phone").owner == "CUSTOMER"
@@ -92,3 +101,13 @@ def test_chunking_keeps_absolute_offsets():
     assert "345 67" not in out and "Иванов" not in out
     for s, e, t in spans:
         assert 0 <= s < e <= len(text)
+
+
+def test_email_crossing_chunk_boundary_is_fully_masked():
+    local = "a" * 64
+    email = f"{local}@example.com"
+    text = "x" * 19949 + "(" + email + ")"
+    out, types, _ = mask_text(text)
+    assert "EMAIL" in types
+    assert email not in out
+    assert local not in out

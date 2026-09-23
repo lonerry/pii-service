@@ -1,7 +1,0 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-pydantic==2.8.2
-redis==5.0.8
-prometheus-client==0.20.0
-PyYAML==6.0.2
-cryptography==43.0.1

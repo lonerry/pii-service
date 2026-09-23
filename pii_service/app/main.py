@@ -51,8 +51,11 @@ ERRORS = Counter("pii_errors_total", "Errors", ["system", "kind"])
 CONFIG = load_config()
 SYSTEMS = CONFIG.get("systems", {})
 
-_CIPHER = Cipher()
 _redis_url = os.getenv("REDIS_URL")
+_encryption_key = os.getenv("PII_ENCRYPTION_KEY")
+if _redis_url and not _encryption_key:
+    raise RuntimeError("PII_ENCRYPTION_KEY is required when REDIS_URL is configured")
+_CIPHER = Cipher(_encryption_key)
 STORE = RedisStore(_redis_url, _CIPHER) if _redis_url else InMemoryStore(_CIPHER)
 PROCESSOR = Processor(
     STORE,

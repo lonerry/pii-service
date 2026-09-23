@@ -25,6 +25,7 @@ from .structure import FieldIndex, parse_fields
 logger = logging.getLogger("pii.pipeline")
 
 CHUNK_SIZE = int(os.getenv("PII_CHUNK_SIZE", "20000"))
+CHUNK_OVERLAP = SpanIndex.MAX_SPAN
 
 
 def chunks(text: str, size: int = CHUNK_SIZE) -> Iterable[tuple[int, int]]:
@@ -46,9 +47,14 @@ def chunks(text: str, size: int = CHUNK_SIZE) -> Iterable[tuple[int, int]]:
 
 
 def _chunk_text(text: str) -> Iterable[tuple[int, str]]:
-    """Единый обход чанков с их абсолютным смещением."""
+    """Обход чанков с overlap, чтобы сущность не разрезалась на границе."""
     for lo, hi in chunks(text):
-        yield lo, text[lo:hi] if (lo, hi) != (0, len(text)) else text
+        if (lo, hi) == (0, len(text)):
+            yield 0, text
+            continue
+        read_lo = max(0, lo - CHUNK_OVERLAP)
+        read_hi = min(len(text), hi + CHUNK_OVERLAP)
+        yield read_lo, text[read_lo:read_hi]
 
 
 def _detect(text: str, enabled: set[str]) -> list[Candidate]:

@@ -5,6 +5,8 @@ valid for the original input. The original text is always used for masking.
 """
 from __future__ import annotations
 
+import unicodedata
+
 
 def normalize_text(text: str) -> str:
     out: list[str] = []
@@ -23,8 +25,8 @@ def _normalize_char(char: str) -> str:
         return " "
     if char in {"\u2010", "\u2011", "\u2212", "\uff0d"}:
         return "-"
-    if "\uff10" <= char <= "\uff19":
-        return chr(ord("0") + ord(char) - ord("\uff10"))
+    if char.isdecimal():
+        return str(unicodedata.decimal(char))
     if char == "\uff0b":
         return "+"
     if char == "\uff1a":

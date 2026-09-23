@@ -99,11 +99,18 @@ def _validate(cfg: dict[str, Any]) -> dict[str, Any]:
 
 
 def load_config() -> dict[str, Any]:
-    path = Path(os.getenv("CONFIG_PATH", "config.yaml"))
-    if path.exists():
-        with path.open(encoding="utf-8") as fh:
-            raw = yaml.safe_load(fh) or {}
-        if not isinstance(raw, dict):
-            raise TypeError("config root must be a mapping")
-        return _validate(raw)
-    return deepcopy(DEFAULT_CONFIG)
+    configured_path = os.getenv("CONFIG_PATH")
+    path = (
+        Path(configured_path)
+        if configured_path
+        else Path(__file__).resolve().parent.parent / "config.yaml"
+    )
+    if not path.is_file():
+        if configured_path:
+            raise FileNotFoundError(f"CONFIG_PATH does not exist: {path}")
+        return deepcopy(DEFAULT_CONFIG)
+    with path.open(encoding="utf-8") as fh:
+        raw = yaml.safe_load(fh) or {}
+    if not isinstance(raw, dict):
+        raise TypeError("config root must be a mapping")
+    return _validate(raw)
