@@ -1,0 +1,46 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Secrets & local env
+.env
+.env.local
+!.env.example
+
+# Archives & dumps
+*.zip
+*.tar
+*.tar.gz
+*.rdb
+
+# Logs & downloaded artifacts
+logs/
+logs_downloaded/
+*.log
+pii_audit_logs/
+pii_logs/
+
+# Build / deps
+node_modules/
+dist/
+build/
+target/
+
+# Sonar local (optional CI config stays if small)
+.sonar/

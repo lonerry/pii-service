@@ -9,6 +9,14 @@
 
 Сервис: http://localhost:8000
 
+Для нескольких workers обязательно задайте общий постоянный ключ:
+
+    python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    export PII_ENCRYPTION_KEY='полученный-ключ'
+
+Без ключа локальный Compose запускает один worker, иначе восстановление между
+процессами и после перезапуска невозможно.
+
 ## Контракт
 
     POST /process

@@ -1,0 +1,10 @@
+apiVersion: 1
+
+providers:
+  - name: PII Service
+    orgId: 1
+    folder: PII Service
+    type: file
+    disableDeletion: true
+    options:
+      path: /var/lib/grafana/dashboards

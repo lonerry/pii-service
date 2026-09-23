@@ -11,17 +11,19 @@ import base64
 import logging
 import os
 import time
-from typing import Optional, Tuple
 
 from cryptography.fernet import Fernet, InvalidToken
+from redis.exceptions import RedisError
+
+from .engine.errors import RecordDecryptFailed
 
 logger = logging.getLogger("pii.store")
 
-Pair = Tuple[str, str]
+Pair = tuple[str, str]
 
 
 class Cipher:
-    def __init__(self, key: Optional[str] = None) -> None:
+    def __init__(self, key: str | None = None) -> None:
         if key is None:
             key = os.getenv("PII_ENCRYPTION_KEY")
         if key:
@@ -37,7 +39,7 @@ class Cipher:
     def encrypt_b64(self, value: str) -> str:
         return base64.b64encode(self._f.encrypt(value.encode("utf-8"))).decode("ascii")
 
-    def decrypt_b64(self, token: str) -> Optional[str]:
+    def decrypt_b64(self, token: str) -> str | None:
         try:
             return self._f.decrypt(base64.b64decode(token)).decode("utf-8")
         except (InvalidToken, ValueError):
@@ -52,7 +54,7 @@ class InMemoryStore:
         self.ttl = ttl
         self._lock = asyncio.Lock()
 
-    async def get(self, key: str) -> Optional[Pair]:
+    async def get(self, key: str) -> Pair | None:
         async with self._lock:
             item = self._data.get(key)
             if item is None:
@@ -63,13 +65,22 @@ class InMemoryStore:
                 return None
         original = self._cipher.decrypt_b64(enc_orig)
         if original is None:
-            return None
+            raise RecordDecryptFailed
         return original, masked
 
     async def set(self, key: str, original: str, masked: str) -> None:
         enc_orig = self._cipher.encrypt_b64(original)
         async with self._lock:
             self._data[key] = (enc_orig, masked, time.time() + self.ttl)
+
+    async def set_if_absent(self, key: str, original: str, masked: str) -> bool:
+        enc_orig = self._cipher.encrypt_b64(original)
+        async with self._lock:
+            item = self._data.get(key)
+            if item is not None and item[2] >= time.time():
+                return False
+            self._data[key] = (enc_orig, masked, time.time() + self.ttl)
+            return True
 
 
 class RedisStore:
@@ -88,21 +99,23 @@ class RedisStore:
         try:
             await self._client.ping()
             return True
-        except Exception:
+        except RedisError:
             logger.warning("redis unavailable, falling back to memory")
             self._redis_ok = False
             return False
 
-    async def get(self, key: str) -> Optional[Pair]:
+    async def get(self, key: str) -> Pair | None:
         if await self._check():
             try:
                 data = await self._client.hgetall(f"pii:{key}")
                 if data:
                     original = self._cipher.decrypt_b64(data.get("orig", ""))
                     if original is None:
-                        return None
+                        raise RecordDecryptFailed
                     return original, data.get("masked", "")
-            except Exception:
+            except RecordDecryptFailed:
+                raise
+            except RedisError:
                 logger.warning("redis get failed")
                 self._redis_ok = False
         return await self._fallback.get(key)
@@ -116,7 +129,26 @@ class RedisStore:
                 pipe.expire(f"pii:{key}", self.ttl)
                 await pipe.execute()
                 return
-            except Exception:
+            except RedisError:
                 logger.warning("redis set failed")
                 self._redis_ok = False
         await self._fallback.set(key, original, masked)
+
+    async def set_if_absent(self, key: str, original: str, masked: str) -> bool:
+        enc_orig = self._cipher.encrypt_b64(original)
+        if await self._check():
+            try:
+                script = """
+                if redis.call('EXISTS', KEYS[1]) == 1 then return 0 end
+                redis.call('HSET', KEYS[1], 'orig', ARGV[1], 'masked', ARGV[2])
+                redis.call('EXPIRE', KEYS[1], ARGV[3])
+                return 1
+                """
+                created = await self._client.eval(
+                    script, 1, f"pii:{key}", enc_orig, masked, self.ttl
+                )
+                return bool(created)
+            except RedisError:
+                logger.warning("redis set-if-absent failed")
+                self._redis_ok = False
+        return await self._fallback.set_if_absent(key, original, masked)
