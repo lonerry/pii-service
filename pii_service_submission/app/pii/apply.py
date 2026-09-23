@@ -28,7 +28,7 @@ def apply_candidates(
                 candidate.start,
                 candidate.end,
             )
-            raise ValueError("candidate spans overlap or do not match input")
+            continue
         replacement = replacement_for(candidate)
         if replacement == candidate.text:
             continue

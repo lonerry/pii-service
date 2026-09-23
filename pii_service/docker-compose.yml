@@ -1,8 +1,11 @@
 services:
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 1s
+      retries: 15
 
   pii:
     build: .
@@ -17,4 +20,5 @@ services:
     # записи друг друга. Для локального запуска используем один процесс.
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy

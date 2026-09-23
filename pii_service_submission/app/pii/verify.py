@@ -34,40 +34,6 @@ def _account_context_before(text: str, start: int) -> bool:
     return bool(_ACCOUNT_CTX.search(text[max(0, start - 64):start]))
 
 
-def _card_leaks(text: str) -> list[tuple[int, int, str]]:
-    leaks = []
-    for match in CARD_RE.finditer(text):
-        if _account_context_before(text, match.start()):
-            continue
-        digits = re.sub(r"\D", "", match.group(0))
-        if 13 <= len(digits) <= 19 and luhn_ok(digits):
-            leaks.append((match.start(), match.end(), "CARD"))
-    return leaks
-
-
-def _inn_leaks(text: str) -> list[tuple[int, int, str]]:
-    return [
-        (match.start(), match.end(), "INN")
-        for match in INN_RE.finditer(text)
-        if inn_ok(match.group(0))
-    ]
-
-
-def _snils_leaks(text: str) -> list[tuple[int, int, str]]:
-    return [
-        (match.start(), match.end(), "SNILS")
-        for match in SNILS_RE.finditer(text)
-        if snils_ok(re.sub(r"\D", "", match.group(0)))
-    ]
-
-
-_LEAK_FINDERS = {
-    "CARD": _card_leaks,
-    "INN": _inn_leaks,
-    "SNILS": _snils_leaks,
-}
-
-
 def final_leak_guard(
     text: str,
     found: list[str],
@@ -76,9 +42,22 @@ def final_leak_guard(
 ) -> tuple[str, list[str], list[tuple[int, int, str]]]:
     """Mask any checksum-valid critical value left in the actual output."""
     guard_spans: list[tuple[int, int, str]] = []
-    for entity_type, find_leaks in _LEAK_FINDERS.items():
-        if entity_type in enabled:
-            guard_spans.extend(find_leaks(text))
+    if "CARD" in enabled:
+        for match in CARD_RE.finditer(text):
+            if _account_context_before(text, match.start()):
+                continue
+            digits = re.sub(r"\D", "", match.group(0))
+            if 13 <= len(digits) <= 19 and luhn_ok(digits):
+                guard_spans.append((match.start(), match.end(), "CARD"))
+    if "INN" in enabled:
+        for match in INN_RE.finditer(text):
+            if inn_ok(match.group(0)):
+                guard_spans.append((match.start(), match.end(), "INN"))
+    if "SNILS" in enabled:
+        for match in SNILS_RE.finditer(text):
+            digits = re.sub(r"\D", "", match.group(0))
+            if snils_ok(digits):
+                guard_spans.append((match.start(), match.end(), "SNILS"))
     if "CVV" in enabled:
         guard_spans.extend((*match.span(2), "CVV") for match in CVV_RE.finditer(text))
     if "PIN" in enabled:

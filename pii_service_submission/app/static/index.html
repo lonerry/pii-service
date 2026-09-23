@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2f6f5e">
+  <title>PII Security Module — защита персональных данных</title>
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js?v=20260923-highlight" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/"><img src="/static/icon.svg" alt=""><div>PII Security<span class="brand-sub">module</span></div></a>
+    <div class="nav-caption">ПЛАТФОРМА</div>
+    <nav aria-label="Основная навигация">
+      <button class="nav-item active"><span>◈</span> Песочница</button>
+    </nav>
+    <div class="sidebar-note"><span class="mini-shield">◇</span><strong>Данные остаются<br>на вашем сервере</strong><p>Локальное распознавание.<br>Обратимое маскирование по payload_id.<br>Шифрование соответствий в хранилище.</p></div>
+    <div class="sidebar-bottom">
+      <a href="/docs" target="_blank" rel="noopener">↗ Документация API</a>
+      <div class="system-picker">
+        <label for="system-select">Система (X-System-Id)</label>
+        <select id="system-select"></select>
+      </div>
+    </div>
+  </aside>
+  <div class="shell">
+    <header>
+      <div class="breadcrumb">Платформа <span>/</span> <strong>Песочница</strong></div>
+      <div class="header-right"><span class="env-chip">LOCAL</span><span class="service-status" id="service-status"><i class="dot"></i> Проверяем сервис</span></div>
+    </header>
+    <main>
+      <section class="view" id="view-playground">
+        <div class="page-title"><div><div class="eyebrow">БЕЗОПАСНОСТЬ НА КАЖДОМ ШАГЕ</div><h1>Персональное остаётся личным<span>.</span></h1><p>Проверьте, как сервис маскирует данные перед отправкой во внешнюю систему.</p></div></div>
+        <div class="pipeline"><div><span class="step-number">01</span><span>Исходный текст<small>На вашей стороне</small></span></div><span class="pipeline-line"></span><div class="active"><span class="step-number">02</span><span>Маскирование<small>POST /process</small></span></div><span class="pipeline-line"></span><div><span class="step-number">03</span><span>Отправка дальше<small>Только защищённый текст</small></span></div><span class="pipeline-line"></span><div><span class="step-number">04</span><span>Восстановление<small>Тот же payload_id</small></span></div></div>
+        <div class="control-bar"><span class="local-note"><i></i> Обработка на сервере</span><label class="mask-mode-picker" for="mask-mode">Маскирование<select id="mask-mode"><option value="format">Форматное (И., ***)</option><option value="synthetic">Синтетические замены</option></select></label></div>
+        <div class="editor-grid">
+          <section class="editor-card"><div class="card-heading"><div><span class="small-square">↗</span><h2>Исходный текст</h2></div><button class="text-button" id="clear-input">Очистить</button></div><div class="editor-body"><label class="sr-only" for="source-text">Текст для защиты</label><textarea id="source-text" spellcheck="false" placeholder="Вставьте текст с персональными данными…"></textarea><div class="example-row"><span>Попробовать</span><button data-example="client" class="example active">Анкета клиента</button><button data-example="payment" class="example">Платёж</button><button data-example="public" class="example">Публичные данные</button></div></div><div class="editor-footer"><span id="char-count">0 символов</span><button class="primary-button" id="protect-button"><span>◇</span> Защитить данные <span>→</span></button></div></section>
+          <section class="editor-card result-card"><div class="card-heading"><div><span class="small-square green">✓</span><h2 id="result-heading">Защищённый текст</h2></div><button class="text-button" id="copy-result" disabled>Копировать ⧉</button></div><div class="editor-body result-body"><div id="result-text" class="result-text empty"><span class="empty-symbol">⟐</span><strong>Безопасный текст появится здесь</strong><p>Добавьте текст и запустите защиту.<br>Вы увидите ровно то, что уйдёт дальше.</p></div></div><div class="editor-footer"><span class="result-caption" id="result-caption">Исходные значения не попадают в логи</span><button class="secondary-button" id="restore-button" disabled>↶ Восстановить</button></div></section>
+        </div>
+        <div class="error-message" id="playground-error" role="alert" hidden></div>
+        <div class="insights"><div><span class="metric-label">НАЙДЕНО СОВПАДЕНИЙ</span><strong id="entity-count">—</strong><small id="entity-detail">Ожидание обработки</small></div><div><span class="metric-label">ВРЕМЯ ОБРАБОТКИ</span><strong id="latency">— <small>мс</small></strong><small>Измеряется на сервере</small></div><div><span class="metric-label">ВОССТАНОВЛЕНИЕ</span><strong class="metric-word" id="restore-status">Обратимое</strong><small id="ttl-text">Пара original/masked хранится 1 час</small></div></div>
+        <section class="entities-panel">
+          <div class="section-heading"><h2>Найденные категории <span id="entity-badge">0</span></h2></div>
+          <div id="entity-legend" class="entity-legend"><p class="muted">Здесь появятся категории персональных данных.</p></div>
+          <div class="highlight-panel"><div class="highlight-label">Подсветка в исходном тексте</div><p id="source-highlight" class="highlight-text muted">После защиты здесь будут отмечены найденные фрагменты.</p></div>
+        </section>
+        <div class="bottom-callout"><span>↗</span><div><strong>Контракт максимально простой</strong><p>Один payload_id — сначала маскирует, при повторной отправке замаскированного текста с тем же id — восстанавливает.</p></div></div>
+      </section>
+      <footer><span>PII Security Module</span><span>Локальное распознавание <b>·</b> Fernet-шифрование хранилища <b>·</b> POST /process</span></footer>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>

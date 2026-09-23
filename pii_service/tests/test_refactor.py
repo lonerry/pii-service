@@ -1,5 +1,6 @@
 """Регрессии для реестра типов и чистоты safety-net маскирования."""
 
+import pytest
 import yaml
 
 from app.config import _validate, load_config
@@ -21,6 +22,19 @@ def test_load_config_accepts_all_registered_types(tmp_path, monkeypatch):
     path.write_text(yaml.safe_dump({"systems": {"test": {"types": list(ALL_TYPES_SET)}}}), encoding="utf-8")
     monkeypatch.setenv("CONFIG_PATH", str(path))
     assert set(load_config()["systems"]["test"]["types"]) == ALL_TYPES_SET
+
+
+def test_config_rejects_non_boolean_flags():
+    with pytest.raises(TypeError, match="enabled must be a boolean"):
+        _validate({"systems": {"test": {"enabled": "false"}}})
+
+
+def test_load_config_rejects_non_mapping_root(tmp_path, monkeypatch):
+    path = tmp_path / "config.yaml"
+    path.write_text("- invalid\n- root\n", encoding="utf-8")
+    monkeypatch.setenv("CONFIG_PATH", str(path))
+    with pytest.raises(TypeError, match="root must be a mapping"):
+        load_config()
 
 
 def test_guard_does_not_mutate_caller_spans():

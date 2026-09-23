@@ -1,0 +1,10 @@
+systems:
+  default:
+    enabled: true
+    types: ["ALL"]
+    demask: true
+
+  crm:
+    enabled: true
+    types: ["FIO", "PHONE", "EMAIL", "PASSPORT", "CARD"]
+    demask: true

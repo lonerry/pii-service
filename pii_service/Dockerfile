@@ -8,8 +8,12 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app ./app
-COPY config.yaml .
+RUN groupadd --system app && useradd --system --gid app --home-dir /app app
+
+COPY --chown=app:app app ./app
+COPY --chown=app:app config.yaml .
+
+USER app
 
 EXPOSE 8000
 

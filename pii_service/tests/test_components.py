@@ -2,6 +2,8 @@
 import random
 from itertools import pairwise
 
+import pytest
+
 from app.masking import ALL_TYPES_SET, apply_masks, mask_text
 from app.pii.candidates import MASK, Candidate, SpanIndex
 from app.pii.detectors import inn_ok, luhn_ok, snils_ok
@@ -57,9 +59,9 @@ def test_span_index():
 
 def test_apply_masks_checks_offsets():
     text = "тел +7 912 345 67 89"
-    bad = Candidate(0, 3, "PHONE", "xxx", 0.9, "t", action=MASK)  # text mismatch → пропуск
-    out, found, _ = apply_masks(text, [bad])
-    assert out == text and found == []
+    bad = Candidate(0, 3, "PHONE", "xxx", 0.9, "t", action=MASK)
+    with pytest.raises(ValueError, match="do not match"):
+        apply_masks(text, [bad])
 
 
 def test_spans_valid_and_non_overlapping_on_random_text():

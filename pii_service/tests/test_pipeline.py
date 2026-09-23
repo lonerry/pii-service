@@ -147,6 +147,16 @@ def test_mixed_org_and_personal_contacts():
     assert "info@bank.ru" in out and "petrov.i" not in out
 
 
+def test_verifier_allows_only_policy_approved_residual_occurrences():
+    text = (
+        "Пишите клиенту на ivan@mail.ru. "
+        "Отделение банка: ул. Тверская, д. 5 ivan@mail.ru"
+    )
+    out = masked(text)
+    assert out.count("ivan@mail.ru") == 1
+    assert "****@****.**" in out
+
+
 def test_pin_needs_card_context():
     assert "1234" in masked("Введите код 1234")
     assert "4567" not in masked("Карта 4276 1234 5678 9012, CVV 123, PIN 4567")
