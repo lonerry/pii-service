@@ -1,0 +1,18 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  pii:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - PII_ENCRYPTION_KEY=${PII_ENCRYPTION_KEY:-}
+      - MAX_PAYLOAD_CHARS=${MAX_PAYLOAD_CHARS:-400000}
+      - MASK_TIMEOUT_SECONDS=${MASK_TIMEOUT_SECONDS:-5}
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+    depends_on:
+      - redis
